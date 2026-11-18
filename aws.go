@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"net/mail"
 
+	awsweb "github.com/antonybholmes/go-mail/aws"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sestypes "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 type (
@@ -21,9 +21,7 @@ type (
 	}
 
 	SQSEmailQueue struct {
-		client   *sqs.Client
-		queueUrl *string
-		ctx      context.Context
+		client *awsweb.SqsSender
 	}
 )
 
@@ -120,14 +118,16 @@ func NewSqsEmailQueue(queueUrl string) *SQSEmailQueue {
 		log.Fatal().Msgf("unable to load SDK config: %v", err)
 	}
 
-	client := sqs.NewFromConfig(cfg)
+	sqs := sqs.NewFromConfig(cfg)
 
-	return &SQSEmailQueue{client: client, queueUrl: aws.String(queueUrl), ctx: ctx}
+	client := awsweb.NewSqsSender(sqs, queueUrl)
+
+	return &SQSEmailQueue{client: client}
 }
 
 // SendMail sends an email message to the SQS queue.
 // The message is serialized as JSON and includes message attributes.
-func (queue *SQSEmailQueue) SendMail(mail *MailItem) error {
+func (queue *SQSEmailQueue) SendMail(ctx context.Context, mail *MailItem) error {
 
 	body, err := json.Marshal(mail)
 
@@ -135,18 +135,20 @@ func (queue *SQSEmailQueue) SendMail(mail *MailItem) error {
 		return err
 	}
 
+	err = queue.client.Send(ctx, body)
+
 	// Send to SQS
-	_, err = queue.client.SendMessage(queue.ctx, &sqs.SendMessageInput{
-		QueueUrl:    queue.queueUrl,
-		MessageBody: aws.String(string(body)),
-		// Optional: add message attributes
-		MessageAttributes: map[string]sqstypes.MessageAttributeValue{
-			"type": {
-				DataType:    AwsTypeString,
-				StringValue: AwsEmailValue,
-			},
-		},
-	})
+	// _, err = queue.client.SendMessage(ctx, &sqs.SendMessageInput{
+	// 	QueueUrl:    aws.String(queue.client.QueueUrl()),
+	// 	MessageBody: aws.String(string(body)),
+	// 	// Optional: add message attributes
+	// 	MessageAttributes: map[string]sqstypes.MessageAttributeValue{
+	// 		"type": {
+	// 			DataType:    AwsTypeString,
+	// 			StringValue: AwsEmailValue,
+	// 		},
+	// 	},
+	// })
 
 	return err
 }

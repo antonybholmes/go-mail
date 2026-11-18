@@ -1,6 +1,6 @@
-module github.com/antonybholmes/go-mailserver
+module github.com/antonybholmes/go-mail
 
-go 1.27.1
+go 1.27.4
 
 replace github.com/antonybholmes/go-sys => ../go-sys
 

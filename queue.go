@@ -1,4 +1,4 @@
-package mailserver
+package mail
 
 type Payload struct {
 	DataType string `json:"dataType"`
@@ -8,6 +8,7 @@ type Payload struct {
 type MailItem struct {
 	Name      string   `json:"name"`
 	To        string   `json:"to"`
+	From      string   `json:"from"`
 	EmailType string   `json:"type"`
 	TTL       string   `json:"ttl"`
 	Payload   *Payload `json:"payload,omitempty"`

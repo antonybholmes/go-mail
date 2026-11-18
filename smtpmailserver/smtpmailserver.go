@@ -4,13 +4,14 @@ import (
 	"net/mail"
 	"sync"
 
-	mailserver "github.com/antonybholmes/go-mailserver"
+	email "github.com/antonybholmes/go-mail"
+
 	"github.com/antonybholmes/go-sys/env"
 	"github.com/antonybholmes/go-sys/log"
 )
 
 var (
-	instance *mailserver.SMTPMailServer
+	instance *email.SMTPMailServer
 	once     sync.Once
 )
 
@@ -31,7 +32,7 @@ func InitSMTPMailer() {
 		// 	SetHost(env.GetStr("SMTP_HOST", ""), env.GetUint32("SMTP_PORT", 587)).
 		// 	SetFrom(from)
 
-		instance = mailserver.NewSMTPMailServer(env.GetStr("SMTP_USER", ""),
+		instance = email.NewSMTPMailServer(env.GetStr("SMTP_USER", ""),
 			env.GetStr("SMTP_PASSWORD", ""),
 			env.GetStr("SMTP_HOST", ""),
 			env.GetUint32("SMTP_PORT", 587),

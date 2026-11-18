@@ -1,4 +1,4 @@
-package mailserver
+package mail
 
 import (
 	"bytes"
@@ -88,8 +88,6 @@ func (mailer *SMTPMailServer) SendEmailRaw(to *mail.Address, body []byte) error 
 	err := smtp.SendMail(mailer.addr, auth, mailer.from.Address, []string{
 		to.Address,
 	}, body)
-
-	log.Debug().Msgf("aaaaa")
 
 	if err != nil {
 		log.Error().Msgf("%s", err)

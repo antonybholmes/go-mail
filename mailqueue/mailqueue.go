@@ -18,6 +18,6 @@ func InitMailQueue(q email.MailQueue) {
 }
 
 // SendMail adds an email to the mail queue
-func SendMail(email *email.MailItem) error {
-	return queue.SendMail(email)
+func Instance() email.MailQueue {
+	return queue
 }

@@ -134,5 +134,5 @@ func (mailer *SMTPMailServer) plainEmailHeader(to *mail.Address, subject string,
 }
 
 func emailLine(s string, body *bytes.Buffer) {
-	body.Write([]byte(fmt.Sprintf("%s\r\n", s)))
+	body.Write(fmt.Appendf(nil, "%s\r\n", s))
 }

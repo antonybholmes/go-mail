@@ -1,5 +1,7 @@
 package mail
 
+import "github.com/antonybholmes/go-sys/jobs"
+
 type (
 	Payload struct {
 		DataType string `json:"dataType"`
@@ -7,20 +9,18 @@ type (
 	}
 
 	MailItem struct {
-		Name      string   `json:"name"`
-		To        string   `json:"to"`
-		From      string   `json:"from"`
-		EmailType string   `json:"type"`
-		TTL       string   `json:"ttl"`
-		Payload   *Payload `json:"payload,omitempty"`
-		//RedirectUrl string `json:"redirectUrl"`
-		LinkUrl string `json:"linkUrl"`
-		// Used to indicate if emails should be for web users or
-		// geared towards API users who just want the tokens without
-		// any links
-		Mode string `json:"mode"`
+		Payload   *Payload      `json:"payload,omitempty"`
+		Job       *jobs.BaseJob `json:"job,omitempty"`
+		Name      string        `json:"name"`
+		To        string        `json:"to"`
+		From      string        `json:"from"`
+		EmailType string        `json:"type"`
+		TTL       string        `json:"ttl,omitempty"`
+		LinkUrl   string        `json:"linkUrl,omitempty"`
+		Mode      string        `json:"mode,omitempty"`
 	}
 
+	// MailQueue defines the interface for sending mail items to a queue
 	MailQueue interface {
 		SendMail(mail *MailItem) error
 	}

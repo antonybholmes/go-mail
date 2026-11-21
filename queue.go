@@ -1,6 +1,10 @@
 package mail
 
-import "github.com/antonybholmes/go-sys/jobs"
+import (
+	"context"
+
+	"github.com/antonybholmes/go-sys/jobs"
+)
 
 type (
 	Payload struct {
@@ -12,8 +16,8 @@ type (
 		Payload *Payload      `json:"payload,omitempty"`
 		Job     *jobs.BaseJob `json:"job,omitempty"`
 		// Name of the user, if applicable.
-		UserID string `json:"userId,omitempty"`
-		//Name      string    `json:"name,omitempty"`
+		UserID    string    `json:"userId,omitempty"`
+		Name      string    `json:"name,omitempty"`
 		To        string    `json:"to"`
 		From      string    `json:"from"`
 		EmailType EmailType `json:"type"`
@@ -24,7 +28,7 @@ type (
 
 	// MailQueue defines the interface for sending mail items to a queue
 	MailQueue interface {
-		SendMail(mail *MailItem) error
+		SendMail(ctx context.Context, mail *MailItem) error
 	}
 )
 

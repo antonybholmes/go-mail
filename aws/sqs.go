@@ -175,7 +175,7 @@ func (c *SQSEmailConsumer) processMessage(ctx context.Context,
 		return fmt.Errorf("decode message %s: %w", messageID, err)
 	}
 
-	if err := c.EmailHandler.SendMail(&m); err != nil {
+	if err := c.EmailHandler.SendMail(ctx, &m); err != nil {
 		return fmt.Errorf("send message %s: %w", messageID, err)
 	}
 

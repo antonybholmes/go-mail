@@ -61,7 +61,7 @@ func (h *ValkeyHandler) Consume(ctx context.Context) {
 		}
 
 		err = h.pool.Submit(func() {
-			err := h.processMessages(msg)
+			err := h.processMessages(ctx, msg)
 
 			if err != nil {
 				log.Debug().Msgf("error sending email: %v", err)
@@ -75,7 +75,7 @@ func (h *ValkeyHandler) Consume(ctx context.Context) {
 	}
 }
 
-func (h *ValkeyHandler) processMessages(msg *redis.Message) error {
+func (h *ValkeyHandler) processMessages(ctx context.Context, msg *redis.Message) error {
 	var m MailItem
 
 	err := json.Unmarshal([]byte(msg.Payload), &m)
@@ -86,5 +86,5 @@ func (h *ValkeyHandler) processMessages(msg *redis.Message) error {
 
 	//log.Debug().Msgf("email %s %v", msg.Payload, qe.EmailType)
 
-	return h.EmailHandler.SendMail(&m)
+	return h.EmailHandler.SendMail(ctx, &m)
 }

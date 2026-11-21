@@ -54,7 +54,10 @@ func (s *SQSSender) Send(ctx context.Context, payload []byte) error {
 	return nil
 }
 
-func (s *SQSSender) SendFifo(ctx context.Context, id string, groupID string, payload []byte) error {
+func (s *SQSSender) SendFifo(ctx context.Context,
+	id string,
+	groupID string,
+	payload []byte) error {
 	input := &sqs.SendMessageInput{
 		QueueUrl:    aws.String(s.QueueURL),
 		MessageBody: aws.String(string(payload))}

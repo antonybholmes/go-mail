@@ -32,7 +32,7 @@ type (
 	}
 
 	SQSEmailQueue struct {
-		client *SQSSender
+		Sender *SQSSender
 	}
 )
 
@@ -189,20 +189,20 @@ func (c *SQSEmailConsumer) processMessage(ctx context.Context,
 	return nil
 }
 
-func NewSQSEmailQueue(queueUrl string) *SQSEmailQueue {
-	ctx := context.Background()
+func NewSQSEmailQueue(client *sqs.Client, queueUrl string) *SQSEmailQueue {
+	// ctx := context.Background()
 
-	// Load AWS config (region and credentials)
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		log.Fatal().Msgf("unable to load SDK config: %v", err)
-	}
+	// // Load AWS config (region and credentials)
+	// cfg, err := config.LoadDefaultConfig(ctx)
+	// if err != nil {
+	// 	log.Fatal().Msgf("unable to load SDK config: %v", err)
+	// }
 
-	sqs := sqs.NewFromConfig(cfg)
+	//sqs := sqs.NewFromConfig(cfg)
 
-	client := NewSQSSender(sqs, queueUrl)
+	sender := NewSQSSender(client, queueUrl)
 
-	return &SQSEmailQueue{client: client}
+	return &SQSEmailQueue{Sender: sender}
 }
 
 // SendMail sends an email message to the SQS queue.
@@ -215,7 +215,7 @@ func (queue *SQSEmailQueue) SendMail(ctx context.Context, mail *email.MailItem) 
 		return err
 	}
 
-	err = queue.client.Send(ctx, body)
+	err = queue.Sender.Send(ctx, body)
 
 	// Send to SQS
 	// _, err = queue.client.SendMessage(ctx, &sqs.SendMessageInput{

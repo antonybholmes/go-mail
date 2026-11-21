@@ -13,12 +13,12 @@ import (
 
 type (
 	ValkeyHandler struct {
-		Addr         string
-		User         string
-		Password     string
 		EmailHandler MailQueue
 		pool         *ants.Pool
 		backoff      *sys.Backoff
+		Addr         string
+		User         string
+		Password     string
 	}
 )
 

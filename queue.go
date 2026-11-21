@@ -14,7 +14,7 @@ type (
 		Name      string        `json:"name"`
 		To        string        `json:"to"`
 		From      string        `json:"from"`
-		EmailType string        `json:"type"`
+		EmailType EmailType     `json:"type"`
 		TTL       string        `json:"ttl,omitempty"`
 		LinkUrl   string        `json:"linkUrl,omitempty"`
 		Mode      string        `json:"mode,omitempty"`

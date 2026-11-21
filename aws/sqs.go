@@ -4,95 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 
+	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	email "github.com/antonybholmes/go-mail"
-	"github.com/antonybholmes/go-sys"
 	"github.com/antonybholmes/go-sys/log"
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
-	"github.com/panjf2000/ants"
 )
 
 type (
-	SQSSender struct {
-		Client   *sqs.Client
-		QueueURL string
-	}
-
 	SQSEmailConsumer struct {
-		QueueURL     string
-		Threads      int
-		Client       *sqs.Client
+		Consumer     *awsjobs.SQSConsumer
 		EmailHandler email.MailQueue
-		pool         *ants.Pool
-		backoff      *sys.Backoff
 	}
 
 	SQSEmailQueue struct {
-		Sender *SQSSender
+		Sender *awsjobs.SQSSender
 	}
 )
 
-func NewSQSSender(client *sqs.Client, queueURL string) *SQSSender {
-	return &SQSSender{
-		Client:   client,
-		QueueURL: queueURL,
-	}
-}
-
-func (s *SQSSender) Send(ctx context.Context, payload []byte) error {
-	input := &sqs.SendMessageInput{
-		QueueUrl:    aws.String(s.QueueURL),
-		MessageBody: aws.String(string(payload))}
-
-	if _, err := s.Client.SendMessage(ctx, input); err != nil {
-		return fmt.Errorf("send SQS message: %w", err)
-	}
-	return nil
-}
-
-func (s *SQSSender) SendFifo(ctx context.Context,
-	id string,
-	groupID string,
-	payload []byte) error {
-	input := &sqs.SendMessageInput{
-		QueueUrl:    aws.String(s.QueueURL),
-		MessageBody: aws.String(string(payload))}
-
-	if strings.HasSuffix(s.QueueURL, ".fifo") {
-		input.MessageGroupId = aws.String(groupID)
-		input.MessageDeduplicationId = aws.String(id)
-	}
-
-	if _, err := s.Client.SendMessage(ctx, input); err != nil {
-		return fmt.Errorf("send SQS message: %w", err)
-	}
-	return nil
-}
-
-func NewSQSEmailConsumer(queueURL string,
-	threads int,
+func NewSQSEmailConsumer(consumer *awsjobs.SQSConsumer,
 	emailHandler email.MailQueue,
-	pool *ants.Pool,
 ) *SQSEmailConsumer {
 
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		log.Fatal().Msgf("Unable to load AWS config: %v", err)
-	}
-
-	client := sqs.NewFromConfig(cfg)
-
 	return &SQSEmailConsumer{
-		QueueURL:     queueURL,
-		Threads:      threads,
-		Client:       client,
+		Consumer:     consumer,
 		EmailHandler: emailHandler,
-		pool:         pool,
-		backoff:      sys.NewDefaultBackoff(),
 	}
 }
 
@@ -100,44 +37,35 @@ func NewSQSEmailConsumer(queueURL string,
 // This is a long-running function that continuously polls the queue for messages.
 func (c *SQSEmailConsumer) Consume(ctx context.Context) {
 
-	log.Debug().Msgf("start sqs %s", c.QueueURL)
+	log.Debug().Msgf("start sqs email consumer for %s", c.Consumer.QueueURL)
 
-	for {
-		// pull as many messages as we have worker threads
-		messageBatch, err := c.Client.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
-			QueueUrl:            aws.String(c.QueueURL),
-			MaxNumberOfMessages: int32(c.Threads),
-			WaitTimeSeconds:     WaitTimeSecs,
-		})
-
-		if err != nil {
-			log.Error().Msgf("failed to receive messages: %v", err)
-			c.backoff.Sleep()
-			continue
+	c.Consumer.Consume(ctx, func(ctx context.Context, message sqstypes.Message) error {
+		messageID := "<unknown>"
+		if message.MessageId != nil {
+			messageID = *message.MessageId
 		}
 
-		// if err = c.pool.Submit(func() {
-		// 	err := processMessages(client, ctx, messageBatch)
-		// 	if err != nil {
-		// 		log.Error().Msgf("error processing messages: %v", err)
-		// 	}
-		// }); err != nil {
-		// 	log.Error().Msgf("failed to submit processMessages: %v", err)
-		// }
+		if message.Body == nil || message.ReceiptHandle == nil {
+			return fmt.Errorf("message %s has no body or receipt handle", messageID)
 
-		// process each message individually using the worker pool
-		for _, message := range messageBatch.Messages {
-			submitErr := c.pool.Submit(func() {
-				if err := c.processMessage(ctx, message); err != nil {
-					log.Error().Msgf("error processing SQS message: %v", err)
-				}
-			})
-
-			if submitErr != nil {
-				log.Error().Msgf("failed to submit SQS message: %v", submitErr)
-			}
 		}
-	}
+
+		var m email.MailItem
+		if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
+			return fmt.Errorf("decode message %s: %w", messageID, err)
+		}
+
+		if err := c.EmailHandler.SendMail(ctx, &m); err != nil {
+			return fmt.Errorf("send message %s: %w", messageID, err)
+		}
+
+		if err := c.Consumer.DeleteMessage(ctx, message); err != nil {
+			return fmt.Errorf("delete message %s: %w", messageID, err)
+		}
+
+		return nil
+	})
+
 }
 
 // func processSqsMessages(client *sqs.Client, ctx context.Context, resp *sqs.ReceiveMessageOutput) error {
@@ -157,38 +85,6 @@ func (c *SQSEmailConsumer) Consume(ctx context.Context) {
 // 	return nil
 // }
 
-func (c *SQSEmailConsumer) processMessage(ctx context.Context,
-	message sqstypes.Message) error {
-
-	messageID := "<unknown>"
-	if message.MessageId != nil {
-		messageID = *message.MessageId
-	}
-
-	if message.Body == nil || message.ReceiptHandle == nil {
-		return fmt.Errorf("message %s has no body or receipt handle", messageID)
-
-	}
-
-	var m email.MailItem
-	if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
-		return fmt.Errorf("decode message %s: %w", messageID, err)
-	}
-
-	if err := c.EmailHandler.SendMail(ctx, &m); err != nil {
-		return fmt.Errorf("send message %s: %w", messageID, err)
-	}
-
-	if _, err := c.Client.DeleteMessage(ctx, &sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(c.QueueURL),
-		ReceiptHandle: message.ReceiptHandle,
-	}); err != nil {
-		return fmt.Errorf("delete message %s: %w", messageID, err)
-	}
-
-	return nil
-}
-
 func NewSQSEmailQueue(client *sqs.Client, queueUrl string) *SQSEmailQueue {
 	// ctx := context.Background()
 
@@ -200,7 +96,7 @@ func NewSQSEmailQueue(client *sqs.Client, queueUrl string) *SQSEmailQueue {
 
 	//sqs := sqs.NewFromConfig(cfg)
 
-	sender := NewSQSSender(client, queueUrl)
+	sender := awsjobs.NewSQSSender(client, queueUrl)
 
 	return &SQSEmailQueue{Sender: sender}
 }

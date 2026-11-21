@@ -4,7 +4,10 @@ go 1.27.4
 
 replace github.com/antonybholmes/go-sys => ../go-sys
 
+replace github.com/antonybholmes/go-jobs => ../go-jobs
+
 require (
+	github.com/antonybholmes/go-jobs v0.0.0-00010101000000-000000000000
 	github.com/antonybholmes/go-sys v0.0.0-20261118211639-408b038a66d6
 	github.com/aws/aws-sdk-go-v2 v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.33.18

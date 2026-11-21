@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"fmt"
 	"net/mail"
 
 	email "github.com/antonybholmes/go-mail"
@@ -19,13 +20,13 @@ type (
 	}
 )
 
-func NewSESMailer(from *mail.Address) email.Mailer {
+func NewSESMailer(from *mail.Address) (email.Mailer, error) {
 	// Create a new SES session
 	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		log.Fatal().Msgf("unable to load SDK config, %v", err)
+		return nil, fmt.Errorf("unable to load SDK config: %w", err)
 	}
 
 	// Create a new SES client
@@ -34,7 +35,7 @@ func NewSESMailer(from *mail.Address) email.Mailer {
 	return &SESMailer{
 		svc:  svc,
 		from: aws.String(from.String()),
-	}
+	}, nil
 }
 
 func (mailer *SESMailer) SendHtmlMail(ctx context.Context,

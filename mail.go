@@ -3,6 +3,8 @@ package mail
 import (
 	"context"
 	"net/mail"
+
+	"github.com/antonybholmes/go-jobs"
 )
 
 type (
@@ -13,10 +15,34 @@ type (
 			html string) error
 	}
 
-	// QueueProcessor defines the interface for consuming messages from a queue.
+	// QueueConsumer defines the interface for consuming messages from a queue.
 	// Assumes a loop or continuous process for consuming messages from the queue.
-	QueueProcessor interface {
+	QueueConsumer interface {
 		Consume(ctx context.Context)
+	}
+
+	Payload struct {
+		DataType string `json:"dataType"`
+		Data     string `json:"data"`
+	}
+
+	MailItem struct {
+		Payload *Payload      `json:"payload,omitempty"`
+		Job     *jobs.BaseJob `json:"job,omitempty"`
+		// Name of the user, if applicable.
+		UserID    string    `json:"userId,omitempty"`
+		Name      string    `json:"name,omitempty"`
+		To        string    `json:"to"`
+		From      string    `json:"from"`
+		EmailType EmailType `json:"type"`
+		TTL       string    `json:"ttl,omitempty"`
+		LinkUrl   string    `json:"linkUrl,omitempty"`
+		Mode      string    `json:"mode,omitempty"`
+	}
+
+	// MailQueue defines the interface for sending mail items to a queue
+	MailQueue interface {
+		SendMail(ctx context.Context, mail *MailItem) error
 	}
 
 	EmailType string
@@ -43,4 +69,16 @@ const (
 	EmailTypeJobInProgress EmailType = "job-in-progress"
 	EmailTypeJobFailed     EmailType = "job-failed"
 	EmailTypeJobComplete   EmailType = "job-complete"
+
+	WaitTimeSecs = 10
 )
+
+func NewJobSubmittedMailItem(job *jobs.BaseJob, userID, to, from string) *MailItem {
+	return &MailItem{
+		UserID:    userID,
+		Job:       job,
+		To:        to,
+		From:      from,
+		EmailType: EmailTypeJobSubmitted,
+	}
+}

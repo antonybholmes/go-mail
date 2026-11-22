@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/antonybholmes/go-jobs"
-	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	email "github.com/antonybholmes/go-mail"
+	awssys "github.com/antonybholmes/go-sys/aws"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	sqstypes "github.com/aws/aws-sdk-go-v2/service/sqs/types"
@@ -15,17 +15,17 @@ import (
 
 type (
 	SQSEmailConsumer struct {
-		Consumer     *awsjobs.SQSConsumer
+		Consumer     *awssys.SQSConsumer
 		EmailHandler email.MailQueue
 	}
 
 	SQSEmailQueue struct {
-		Sender *awsjobs.SQSSender
+		Sender *awssys.SQSSender
 		From   string
 	}
 )
 
-func NewSQSEmailConsumer(consumer *awsjobs.SQSConsumer,
+func NewSQSEmailConsumer(consumer *awssys.SQSConsumer,
 	emailHandler email.MailQueue,
 ) *SQSEmailConsumer {
 
@@ -98,7 +98,7 @@ func NewSQSEmailQueue(client *sqs.Client, from string, queueUrl string) *SQSEmai
 
 	//sqs := sqs.NewFromConfig(cfg)
 
-	sender := awsjobs.NewSQSSender(client, queueUrl)
+	sender := awssys.NewSQSSender(client, queueUrl)
 
 	return &SQSEmailQueue{From: from, Sender: sender}
 }

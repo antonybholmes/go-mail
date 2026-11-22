@@ -17,7 +17,7 @@ func NewKafkaEmailQueue(writer *kafka.Writer) *KafkaEmailQueue {
 	return &KafkaEmailQueue{writer: writer}
 }
 
-func (publisher *KafkaEmailQueue) SendMail(ctx context.Context, mail *jobs.MailItem) error {
+func (publisher *KafkaEmailQueue) SendMail(ctx context.Context, mail *jobs.MailQueueItem) error {
 
 	payload, err := json.Marshal(mail)
 

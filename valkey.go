@@ -77,7 +77,7 @@ func (h *ValkeyHandler) Consume(ctx context.Context) {
 }
 
 func (h *ValkeyHandler) processMessages(ctx context.Context, msg *redis.Message) error {
-	var m jobs.MailItem
+	var m jobs.MailQueueItem
 
 	err := json.Unmarshal([]byte(msg.Payload), &m)
 

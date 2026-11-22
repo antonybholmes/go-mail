@@ -2,13 +2,11 @@ package aws
 
 import (
 	"context"
-	"fmt"
 	"net/mail"
 
 	email "github.com/antonybholmes/go-mail"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/sesv2"
 	sestypes "github.com/aws/aws-sdk-go-v2/service/sesv2/types"
 )
@@ -20,17 +18,10 @@ type (
 	}
 )
 
-func NewSESMailer(from *mail.Address) (email.Mailer, error) {
-	// Create a new SES session
-	ctx := context.Background()
+func NewSESMailer(awsConfig aws.Config, from *mail.Address) (email.Mailer, error) {
 
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("unable to load SDK config: %w", err)
-	}
-
-	// Create a new SES client
-	svc := sesv2.NewFromConfig(cfg)
+	// Use the provided AWS config to create a new SES client
+	svc := sesv2.NewFromConfig(awsConfig)
 
 	return &SESMailer{
 		svc:  svc,

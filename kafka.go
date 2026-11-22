@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/antonybholmes/go-jobs"
 	"github.com/antonybholmes/go-sys/log"
 	"github.com/segmentio/kafka-go"
 )
@@ -16,7 +17,7 @@ func NewKafkaEmailQueue(writer *kafka.Writer) *KafkaEmailQueue {
 	return &KafkaEmailQueue{writer: writer}
 }
 
-func (publisher *KafkaEmailQueue) SendMail(mail *MailItem) error {
+func (publisher *KafkaEmailQueue) SendMail(ctx context.Context, mail *jobs.MailItem) error {
 
 	payload, err := json.Marshal(mail)
 

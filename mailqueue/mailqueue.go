@@ -3,21 +3,21 @@ package mailqueue
 import (
 	"sync"
 
-	email "github.com/antonybholmes/go-mail"
+	"github.com/antonybholmes/go-jobs"
 )
 
 var (
-	queue email.MailQueue
+	queue jobs.MailQueue
 	once  sync.Once
 )
 
-func InitMailQueue(q email.MailQueue) {
+func InitMailQueue(q jobs.MailQueue) {
 	once.Do(func() {
 		queue = q
 	})
 }
 
 // SendMail adds an email to the mail queue
-func Instance() email.MailQueue {
+func Instance() jobs.MailQueue {
 	return queue
 }

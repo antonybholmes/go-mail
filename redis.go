@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/antonybholmes/go-jobs"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -19,7 +20,7 @@ func NewRedisEmailQueue(rdb *redis.Client) *RedisEmailQueue {
 	return &RedisEmailQueue{rdb: rdb}
 }
 
-func (publisher *RedisEmailQueue) SendMail(mail *MailItem) error {
+func (publisher *RedisEmailQueue) SendMail(ctx context.Context, mail *jobs.MailItem) error {
 	payload, err := json.Marshal(mail)
 
 	if err != nil {

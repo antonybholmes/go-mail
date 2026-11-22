@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/antonybholmes/go-jobs"
 	awsjobs "github.com/antonybholmes/go-jobs/aws"
 	email "github.com/antonybholmes/go-mail"
 	"github.com/antonybholmes/go-sys/log"
@@ -20,6 +21,7 @@ type (
 
 	SQSEmailQueue struct {
 		Sender *awsjobs.SQSSender
+		From   string
 	}
 )
 
@@ -50,7 +52,7 @@ func (c *SQSEmailConsumer) Consume(ctx context.Context) {
 
 		}
 
-		var m email.MailItem
+		var m jobs.MailItem
 		if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
 			return fmt.Errorf("decode message %s: %w", messageID, err)
 		}
@@ -85,7 +87,7 @@ func (c *SQSEmailConsumer) Consume(ctx context.Context) {
 // 	return nil
 // }
 
-func NewSQSEmailQueue(client *sqs.Client, queueUrl string) *SQSEmailQueue {
+func NewSQSEmailQueue(client *sqs.Client, from string, queueUrl string) *SQSEmailQueue {
 	// ctx := context.Background()
 
 	// // Load AWS config (region and credentials)
@@ -98,12 +100,15 @@ func NewSQSEmailQueue(client *sqs.Client, queueUrl string) *SQSEmailQueue {
 
 	sender := awsjobs.NewSQSSender(client, queueUrl)
 
-	return &SQSEmailQueue{Sender: sender}
+	return &SQSEmailQueue{From: from, Sender: sender}
 }
 
 // SendMail sends an email message to the SQS queue.
 // The message is serialized as JSON and includes message attributes.
-func (queue *SQSEmailQueue) SendMail(ctx context.Context, mail *email.MailItem) error {
+func (q *SQSEmailQueue) SendMail(ctx context.Context, mail *jobs.MailItem) error {
+
+	// Fix from
+	mail.From = q.From
 
 	body, err := json.Marshal(mail)
 
@@ -111,7 +116,7 @@ func (queue *SQSEmailQueue) SendMail(ctx context.Context, mail *email.MailItem) 
 		return err
 	}
 
-	err = queue.Sender.Send(ctx, body)
+	err = q.Sender.Send(ctx, body)
 
 	// Send to SQS
 	// _, err = queue.client.SendMessage(ctx, &sqs.SendMessageInput{

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/antonybholmes/go-jobs"
 	"github.com/antonybholmes/go-sys"
 
 	"github.com/antonybholmes/go-sys/log"
@@ -13,7 +14,7 @@ import (
 
 type (
 	ValkeyHandler struct {
-		EmailHandler MailQueue
+		EmailHandler jobs.MailQueue
 		pool         *ants.Pool
 		backoff      *sys.Backoff
 		Addr         string
@@ -25,7 +26,7 @@ type (
 func NewValkeyHandler(addr string,
 	user string,
 	password string,
-	emailHandler MailQueue,
+	emailHandler jobs.MailQueue,
 	pool *ants.Pool) *ValkeyHandler {
 	return &ValkeyHandler{
 		Addr:         addr,
@@ -76,7 +77,7 @@ func (h *ValkeyHandler) Consume(ctx context.Context) {
 }
 
 func (h *ValkeyHandler) processMessages(ctx context.Context, msg *redis.Message) error {
-	var m MailItem
+	var m jobs.MailItem
 
 	err := json.Unmarshal([]byte(msg.Payload), &m)
 

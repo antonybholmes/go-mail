@@ -52,7 +52,7 @@ func (c *SQSEmailConsumer) Consume(ctx context.Context) {
 
 		}
 
-		var m jobs.QueueMailItem
+		var m jobs.MailQueueItem
 		if err := json.Unmarshal([]byte(*message.Body), &m); err != nil {
 			return fmt.Errorf("decode message %s: %w", messageID, err)
 		}
@@ -105,7 +105,7 @@ func NewSQSEmailQueue(client *sqs.Client, from string, queueUrl string) *SQSEmai
 
 // SendMail sends an email message to the SQS queue.
 // The message is serialized as JSON and includes message attributes.
-func (q *SQSEmailQueue) SendMail(ctx context.Context, mail *jobs.QueueMailItem) error {
+func (q *SQSEmailQueue) SendMail(ctx context.Context, mail *jobs.MailQueueItem) error {
 
 	// Fix from
 	mail.From = q.From

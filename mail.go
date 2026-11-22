@@ -23,7 +23,7 @@ type (
 
 	// MailQueue defines the interface for sending mail items to a queue
 	MailQueue interface {
-		SendMail(ctx context.Context, mail *jobs.MailItem) error
+		SendMail(ctx context.Context, mail *jobs.MailQueueItem) error
 	}
 )
 

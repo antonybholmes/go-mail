@@ -42,3 +42,11 @@ const (
 
 	WaitTimeSecs = 10
 )
+
+func NewTestMailItem(userID string, email string) *jobs.MailQueueItem {
+	return &jobs.MailQueueItem{
+		UserID:    userID,
+		To:        email,
+		EmailType: EmailTypeTest,
+	}
+}
